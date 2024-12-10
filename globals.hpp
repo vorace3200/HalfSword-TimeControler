@@ -14,6 +14,9 @@ public:
     float slowTime = 0.5f;
     int keybind = VK_CAPITAL;
     bool waitingForKey = false;
+    bool toggleSlowTime = false;
+    bool prevKeyActive = false;
+    bool slowTimeActive = false;
 };
 
 inline c_globals globals;

@@ -148,13 +148,28 @@ void ui::render() {
                 }
             }
         }
-
+        ImGui::Spacing();
+        ImGui::Text("Toggle: %s", globals.toggleSlowTime ? "ON" : "OFF");
+        if (ImGui::Button("Toggle Slow Time")) {
+            globals.toggleSlowTime = !globals.toggleSlowTime;
+        }
         ImGui::Spacing();
         bool keyActive = (GetAsyncKeyState(globals.keybind) & 0x8000) != 0;
-        ImGui::Text("TimeControler active: %s", keyActive ? "ON" : "OFF");
+        if (globals.toggleSlowTime) {
+            if ((globals.prevKeyActive == false) && (keyActive == true)) {
+                globals.slowTimeActive = !globals.slowTimeActive;
+            }
+        }
+        else {
+            globals.slowTimeActive = keyActive;
+        }
+        ImGui::Spacing();
+        ImGui::Text("TimeControler active: %s", globals.slowTimeActive ? "ON" : "OFF");
 
-        float desiredTime = keyActive ? globals.slowTime : 1.0f;
+        float desiredTime = globals.slowTimeActive ? globals.slowTime : 1.0f;
         WriteMemory<float>(globals.hProcess, globals.timeDilationAddress, desiredTime);
+
+        globals.prevKeyActive = keyActive;
     }
     else {
         ImGui::Text("Open halfsword");
