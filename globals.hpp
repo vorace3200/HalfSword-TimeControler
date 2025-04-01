@@ -10,6 +10,9 @@ public:
     uintptr_t persistentLevelAddress = 0;
     uintptr_t worldSettingsAddress = 0;
     uintptr_t timeDilationAddress = 0;
+    bool toggleMode = true;
+    bool timeActive = false;
+    bool lastKeyState = false;
     float currentTimeDilation = 1.0f;
     float slowTime = 0.5f;
     int keybind = VK_CAPITAL;

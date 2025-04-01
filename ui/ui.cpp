@@ -52,7 +52,7 @@ auto WriteMemory(HANDLE hProcess, uintptr_t address, T value) -> bool {
 }
 
 void ui::updateMemoryState() {
-    std::string processName = "VersionTest54-Win64-Shipping.exe";
+    std::string processName = "HalfSwordUE5-Win64-Shipping.exe";
     DWORD procId = GetProcessIdByName(processName);
 
     if (procId == 0) return;
@@ -89,7 +89,7 @@ void ui::updateMemoryState() {
     }
 
     // Offsets (i'll update the offsets if that change) 
-    const uintptr_t uWorldOffset = 0x07DBB260;
+    const uintptr_t uWorldOffset = 0x07DC0AF0;
     const uintptr_t persistentLevelOffset = 0x30;
     const uintptr_t worldSettingsOffset = 0x2A0;
     const uintptr_t timeDilationOffset = 0x3C0;
@@ -122,19 +122,25 @@ void ui::updateMemoryState() {
 void ui::render() {
     ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(400, 300));
-    ImGui::Begin("TimeControler", &globals.active, ImGuiWindowFlags_NoResize);
+    ImGui::Begin("TimeControler - Verison 1.0.1", &globals.active, ImGuiWindowFlags_NoResize);
 
     if (globals.hProcess) {
         ImGui::Text("PersistentLevel Address: 0x%llx", globals.persistentLevelAddress);
         ImGui::Text("WorldSettings Address: 0x%llx", globals.worldSettingsAddress);
         ImGui::Text("TimeDilation Address: 0x%llx", globals.timeDilationAddress);
+        ImGui::Separator();
         ImGui::Spacing();
+
         ImGui::Text("Current TimeDilation: %.2f", globals.currentTimeDilation);
         ImGui::SliderFloat("Slow Time", &globals.slowTime, 0.1f, 2.0f, "%.2f");
+		ImGui::Checkbox("Toggle Mode", &globals.toggleMode);
 
+        ImGui::Separator();
         ImGui::Spacing();
+
         const char* keyName = globals.keybind == VK_CAPITAL ? "Caps Lock" : "Custom Key";
         ImGui::Text("Actual keybind: %s", keyName);
+
 
         if (ImGui::Button("Change Keybind")) globals.waitingForKey = true;
 
@@ -148,13 +154,22 @@ void ui::render() {
                 }
             }
         }
+        else {
+            bool keyActive = (GetAsyncKeyState(globals.keybind) & 0x8000) != 0;
 
-        ImGui::Spacing();
-        bool keyActive = (GetAsyncKeyState(globals.keybind) & 0x8000) != 0;
-        ImGui::Text("TimeControler active: %s", keyActive ? "ON" : "OFF");
-
-        float desiredTime = keyActive ? globals.slowTime : 1.0f;
-        WriteMemory<float>(globals.hProcess, globals.timeDilationAddress, desiredTime);
+            if (globals.toggleMode) {
+                if (keyActive && !globals.lastKeyState) {
+                    globals.timeActive = !globals.timeActive;
+                }
+                globals.lastKeyState = keyActive;
+            }
+            else {
+                globals.timeActive = keyActive;
+            }
+            float desiredTime = globals.timeActive ? globals.slowTime : 1.0f;
+            WriteMemory<float>(globals.hProcess, globals.timeDilationAddress, desiredTime);
+            ImGui::Text("TimeControler active: %s", globals.timeActive ? "ON" : "OFF");
+        }
     }
     else {
         ImGui::Text("Open halfsword");
