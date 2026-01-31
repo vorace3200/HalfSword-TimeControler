@@ -12,6 +12,7 @@
 #include "game/GameModeManagerSDK.hpp"
 #include "game/AddressResolver.hpp"
 #include "ui/UIManager.hpp"
+#include "core/Logger.hpp"
 
 class Renderer {
 public:
@@ -96,4 +97,5 @@ private:
     
     bool initialized_ = false;
     bool running_ = true;
+    bool debugMode_ = false;
 };

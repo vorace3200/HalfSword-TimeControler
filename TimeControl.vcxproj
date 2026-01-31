@@ -154,6 +154,7 @@
   <ItemGroup>
     <ClInclude Include="src\Application.hpp" />
     <ClInclude Include="src\core\HotkeyManager.hpp" />
+    <ClInclude Include="src\core\Logger.hpp" />
     <ClInclude Include="src\core\MemoryReader.hpp" />
     <ClInclude Include="src\core\Offsets.hpp" />
     <ClInclude Include="src\core\ProcessManager.hpp" />

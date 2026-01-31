@@ -49,4 +49,6 @@ struct Offsets {
     static constexpr uintptr_t ActorsCount = 0x8;
     static constexpr uintptr_t LocalPlayersCount = 0x8;
     static constexpr uintptr_t LocalPlayerData = 0x0;
+    static constexpr uintptr_t ObjFlags = 0x8;
+    static constexpr uintptr_t ObjIndex = 0xC;
 };

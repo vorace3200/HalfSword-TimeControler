@@ -2,6 +2,7 @@
 #include "../game/AddressResolver.hpp"
 #include "../core/MemoryReader.hpp"
 #include "../core/Offsets.hpp"
+#include "../core/Logger.hpp"
 #include "../../imgui/imgui.h"
 #include <windows.h>
 
@@ -20,7 +21,8 @@ void UIManager::Render() {
         return;
     }
     
-    if (gameState_.GetAddresses().IsValid()) {
+    const auto& addrs = gameState_.GetAddresses();
+    if (addrs.IsValid() && addrs.HasPlayer()) {
         const char* tabs[] = { "Time", "Player", "Movement", "Combat", "Enemy", "Debug" };
         
         if (ImGui::BeginTabBar("MainTabs")) {
@@ -40,6 +42,9 @@ void UIManager::Render() {
             }
             ImGui::EndTabBar();
         }
+    } else if (addrs.IsValid() && !addrs.HasPlayer()) {
+        ImGui::Text("Waiting for game to start...");
+        ImGui::Text("Load into a match to enable features.");
     } else {
         ImGui::Text("Open halfsword");
     }
@@ -49,6 +54,13 @@ void UIManager::Render() {
 }
 
 void UIManager::Update() {
+    
+    const auto& addrs = gameState_.GetAddresses();
+    if (addrs.player == nullptr) {
+        
+        return;
+    }
+    
     DWORD currentTime = GetTickCount();
     
     if (currentTime - lastTimeUpdateTime_ >= TIME_UPDATE_INTERVAL) {
@@ -71,20 +83,23 @@ void UIManager::UpdateTimeControl() {
         config_.timeActive = hotkeyManager_.IsKeyDown();
     }
 
-    if (gameState_.GetAddresses().IsValid()) {
+    
+    
+    const auto& addrs = gameState_.GetAddresses();
+    if (addrs.IsValid() && addrs.player != nullptr) {
         timeController_.Update(config_.timeActive, config_.slowTime);
     }
 }
 
 void UIManager::UpdatePlayerCheats() {
-
     if (!playerManager_.HasPlayer()) {
-
         lastPlayerUpdateTime_ += PLAYER_UPDATE_INTERVAL * 5;
         return;
     }
     
-    playerManager_.SetGodMode(config_.playerConfig.godModeEnabled);
+    if (config_.playerConfig.godModeEnabled) {
+        playerManager_.SetGodMode(config_.playerConfig.godModeEnabled);
+    }
 
     if (config_.playerConfig.infiniteStamina) {
         playerManager_.SetInfiniteStamina();
@@ -151,27 +166,46 @@ void UIManager::RenderPlayerTab() {
         return;
     }
     
-    ImGui::Checkbox("God Mode (Invulnerable)", &config_.playerConfig.godModeEnabled);
+    if (ImGui::Checkbox("God Mode (Invulnerable)", &config_.playerConfig.godModeEnabled)) {
+        LOG_INFO("UIManager", "God Mode toggled: ", config_.playerConfig.godModeEnabled ? "ON" : "OFF");
+    }
     ImGui::SameLine();
     ImGui::TextDisabled("(?)");
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Blocks all damage");
     
     ImGui::Spacing();
-    ImGui::Checkbox("Infinite Stamina", &config_.playerConfig.infiniteStamina);
-    ImGui::Checkbox("No Pain", &config_.playerConfig.noPain);
-    ImGui::Checkbox("Max Consciousness", &config_.playerConfig.maxConsciousness);
-    ImGui::Checkbox("Infinite Kick", &config_.playerConfig.infiniteKick);
+    if (ImGui::Checkbox("Infinite Stamina", &config_.playerConfig.infiniteStamina)) {
+        LOG_INFO("UIManager", "Infinite Stamina toggled: ", config_.playerConfig.infiniteStamina ? "ON" : "OFF");
+    }
+    if (ImGui::Checkbox("No Pain", &config_.playerConfig.noPain)) {
+        LOG_INFO("UIManager", "No Pain toggled: ", config_.playerConfig.noPain ? "ON" : "OFF");
+    }
+    if (ImGui::Checkbox("Max Consciousness", &config_.playerConfig.maxConsciousness)) {
+        LOG_INFO("UIManager", "Max Consciousness toggled: ", config_.playerConfig.maxConsciousness ? "ON" : "OFF");
+    }
+    if (ImGui::Checkbox("Infinite Kick", &config_.playerConfig.infiniteKick)) {
+        LOG_INFO("UIManager", "Infinite Kick toggled: ", config_.playerConfig.infiniteKick ? "ON" : "OFF");
+    }
     
     ImGui::Separator();
     ImGui::Spacing();
     
     static bool oneHitKill = false;
     if (ImGui::Checkbox("One-Hit Kill", &oneHitKill)) {
+        LOG_INFO("UIManager", "One-Hit Kill toggled: ", oneHitKill ? "ON" : "OFF");
         uintptr_t gameInstance = gameState_.GetAddresses().gameInstance;
         if (gameInstance != 0 && processManager_.IsAttached()) {
             double damageRate = oneHitKill ? 9999.0 : 1.0;
-            MemoryReader<double> writer(processManager_.GetProcess());
-            writer.Write(gameInstance + Offsets::GameInstanceDamageRate, damageRate);
+            LOG_INFO("UIManager", "Writing damage rate: ", damageRate);
+            MemoryReader<double> writer(processManager_.GetProcess(), "UIManager");
+            bool success = writer.Write(gameInstance + Offsets::GameInstanceDamageRate, damageRate);
+            if (success) {
+                LOG_INFO("UIManager", "One-Hit Kill applied successfully");
+            } else {
+                LOG_ERROR("UIManager", "Failed to apply One-Hit Kill");
+            }
+        } else {
+            LOG_WARNING("UIManager", "Cannot apply One-Hit Kill - GameInstance=", gameInstance, " Attached=", processManager_.IsAttached());
         }
     }
     ImGui::SameLine();
@@ -181,13 +215,23 @@ void UIManager::RenderPlayerTab() {
     ImGui::Spacing();
     
     if (ImGui::Button("Heal Player")) {
-        playerManager_.FullHeal();
+        if (playerManager_.HasPlayer()) {
+            playerManager_.FullHeal();
+            LOG_INFO("UIManager", "Heal Player executed");
+        } else {
+            LOG_WARNING("UIManager", "Heal Player failed - No valid player");
+        }
     }
     
     ImGui::SameLine();
     
     if (ImGui::Button("Restore Stamina")) {
-        playerManager_.RestoreStamina();
+        if (playerManager_.HasPlayer()) {
+            playerManager_.RestoreStamina();
+            LOG_INFO("UIManager", "Restore Stamina executed");
+        } else {
+            LOG_WARNING("UIManager", "Restore Stamina failed - No valid player");
+        }
     }
 }
 
@@ -199,15 +243,25 @@ void UIManager::RenderMovementTab() {
     
     float displaySpeed = config_.playerConfig.superSpeed;
     if (ImGui::SliderFloat("Walk Speed", &displaySpeed, 10.0f, 150.0f, "%.0f")) {
+        LOG_INFO("UIManager", "Walk Speed changed: ", displaySpeed);
         config_.playerConfig.superSpeed = displaySpeed;
     }
-    ImGui::SliderFloat("Jump Power", &config_.playerConfig.superJump, 100.0f, 2000.0f, "%.0f");
-    ImGui::SliderFloat("Gravity Scale", &config_.playerConfig.gravityScale, 0.1f, 3.0f, "%.1f");
-    ImGui::SliderFloat("Player Mass", &config_.playerConfig.playerMass, 1.0f, 500.0f, "%.0f");
-    ImGui::SliderFloat("Ground Friction", &config_.playerConfig.groundFriction, 0.0f, 20.0f, "%.1f");
+    if (ImGui::SliderFloat("Jump Power", &config_.playerConfig.superJump, 100.0f, 2000.0f, "%.0f")) {
+        LOG_INFO("UIManager", "Jump Power changed: ", config_.playerConfig.superJump);
+    }
+    if (ImGui::SliderFloat("Gravity Scale", &config_.playerConfig.gravityScale, 0.1f, 3.0f, "%.1f")) {
+        LOG_INFO("UIManager", "Gravity Scale changed: ", config_.playerConfig.gravityScale);
+    }
+    if (ImGui::SliderFloat("Player Mass", &config_.playerConfig.playerMass, 1.0f, 500.0f, "%.0f")) {
+        LOG_INFO("UIManager", "Player Mass changed: ", config_.playerConfig.playerMass);
+    }
+    if (ImGui::SliderFloat("Ground Friction", &config_.playerConfig.groundFriction, 0.0f, 20.0f, "%.1f")) {
+        LOG_INFO("UIManager", "Ground Friction changed: ", config_.playerConfig.groundFriction);
+    }
     
     ImGui::Spacing();
     if (ImGui::Button("Reset to Default")) {
+        LOG_INFO("UIManager", "Reset to Default button clicked");
         config_.playerConfig.superSpeed = 60.0f;
         config_.playerConfig.superJump = 420.0f;
         config_.playerConfig.gravityScale = 1.0f;
@@ -222,10 +276,18 @@ void UIManager::RenderCombatTab() {
         return;
     }
     
-    ImGui::SliderFloat("Punch Force", &config_.playerConfig.punchForce, 0.1f, 10.0f, "%.1f");
-    ImGui::SliderFloat("Kick Force", &config_.playerConfig.kickForce, 0.1f, 10.0f, "%.1f");
-    ImGui::SliderFloat("Damage Multiplier", &config_.playerConfig.damageMultiplier, 0.1f, 50.0f, "%.1f");
-    ImGui::SliderFloat("Muscle Power", &config_.playerConfig.musclePower, 0.1f, 5.0f, "%.1f");
+    if (ImGui::SliderFloat("Punch Force", &config_.playerConfig.punchForce, 0.1f, 10.0f, "%.1f")) {
+        LOG_INFO("UIManager", "Punch Force changed: ", config_.playerConfig.punchForce);
+    }
+    if (ImGui::SliderFloat("Kick Force", &config_.playerConfig.kickForce, 0.1f, 10.0f, "%.1f")) {
+        LOG_INFO("UIManager", "Kick Force changed: ", config_.playerConfig.kickForce);
+    }
+    if (ImGui::SliderFloat("Damage Multiplier", &config_.playerConfig.damageMultiplier, 0.1f, 50.0f, "%.1f")) {
+        LOG_INFO("UIManager", "Damage Multiplier changed: ", config_.playerConfig.damageMultiplier);
+    }
+    if (ImGui::SliderFloat("Muscle Power", &config_.playerConfig.musclePower, 0.1f, 5.0f, "%.1f")) {
+        LOG_INFO("UIManager", "Muscle Power changed: ", config_.playerConfig.musclePower);
+    }
 }
 
 void UIManager::RenderEnemyTab() {
@@ -236,6 +298,19 @@ void UIManager::RenderEnemyTab() {
 
 void UIManager::RenderDebugTab() {
     ImGui::Text("Debug Information");
+    ImGui::Separator();
+    ImGui::Spacing();
+    
+    
+    if (ImGui::Checkbox("Enable Debug Console", &config_.debugEnabled)) {
+        LOG_INFO("UIManager", "Debug mode ", config_.debugEnabled ? "enabled" : "disabled", " by user");
+        Logger::GetInstance().SetDebugEnabled(config_.debugEnabled);
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Opens a console window with detailed debug logs. Use this to diagnose crashes.");
+    }
+    
+    ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
     

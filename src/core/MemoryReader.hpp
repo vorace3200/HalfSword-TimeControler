@@ -1,11 +1,12 @@
 #pragma once
 #include <windows.h>
 #include <cstdint>
+#include "Logger.hpp"
 
 template<typename T>
 class MemoryReader {
 public:
-    MemoryReader(HANDLE process) : process_(process) {}
+    MemoryReader(HANDLE process, const char* component = "MemoryReader") : process_(process), component_(component) {}
 
     T Read(uintptr_t address) const {
         T value{};
@@ -37,4 +38,5 @@ public:
 
 private:
     HANDLE process_;
+    const char* component_;
 };

@@ -2,6 +2,7 @@
 #include "../imgui/imgui.h"
 #include "../imgui/imgui_impl_win32.h"
 #include "../imgui/imgui_impl_dx9.h"
+#include "core/Logger.hpp"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -197,6 +198,13 @@ Application::~Application() {
 bool Application::Initialize() {
     g_App = this;
 
+    
+    if (debugMode_) {
+        Logger::GetInstance().SetDebugEnabled(true);
+        LOG_INFO("Application", "Debug mode enabled - Console opened");
+    }
+    LOG_FUNC_ENTRY("Application", "Initialize");
+
     window_ = std::make_unique<Window>();
     if (!window_->Create(GetModuleHandle(nullptr), "Half Sword trainer")) {
         return false;
@@ -231,8 +239,22 @@ bool Application::Initialize() {
 }
 
 void Application::Run() {
+    LOG_FUNC_ENTRY("Application", "Run");
+    int frameCount = 0;
+    DWORD lastStatusLogTime = GetTickCount();
+    static bool wasInMenu = false;
+    static DWORD menuEnterTime = 0;
+    static bool hasLoggedAttach = false;
+    
     while (running_ && window_->ProcessMessages()) {
+        frameCount++;
+        DWORD currentTime = GetTickCount();
+        
+        
+        bool shouldLogStatus = (currentTime - lastStatusLogTime >= 5000);
+        
         if (uiManager_->ShouldClose()) {
+            LOG_INFO("Application", "UI requested close");
             running_ = false;
             break;
         }
@@ -240,22 +262,69 @@ void Application::Run() {
         hotkeyManager_->Update();
         
         if (!processManager_->IsAttached()) {
+            
+            if (!hasLoggedAttach) {
+                LOG_INFO("Application", "Waiting for HalfSword process...");
+                hasLoggedAttach = true;
+            }
             processManager_->Attach("HalfSwordUE5-Win64-Shipping.exe");
             if (processManager_->IsAttached()) {
-                playerManager_->SetProcess(processManager_->GetProcess());
-                timeController_->SetProcess(processManager_->GetProcess());
-                enemyManager_->SetProcess(processManager_->GetProcess());
-                gameModeManager_->SetProcess(processManager_->GetProcess());
+                LOG_INFO("Application", "Successfully attached to process");
+                hasLoggedAttach = false;  
+                HANDLE process = processManager_->GetProcess();
+                
+                playerManager_->SetProcess(process);
+                timeController_->SetProcess(process);
+                enemyManager_->SetProcess(process);
+                gameModeManager_->SetProcess(process);
             }
         } else {
-            if (addressResolver_->ResolveAddresses()) {
-                const auto& addrs = gameState_->GetAddresses();
+            
+            bool resolved = addressResolver_->ResolveAddresses();
+            const auto& addrs = gameState_->GetAddresses();
+            bool inMenu = (addrs.uWorld == 0 || addrs.player == nullptr);
+            
+            
+            if (inMenu != wasInMenu || shouldLogStatus) {
+                if (inMenu) {
+                    if (!wasInMenu) {
+                        LOG_INFO("Application", "Entered menu/loading screen - pausing memory operations");
+                        menuEnterTime = currentTime;
+                    }
+                } else {
+                    if (wasInMenu) {
+                        LOG_INFO("Application", "Entered game - resuming memory operations");
+                    }
+                    LOG_INFO("Application", "Addresses resolved - Player: 0x", std::hex, (uintptr_t)addrs.player);
+                }
+                lastStatusLogTime = currentTime;
+            }
+            wasInMenu = inMenu;
+            
+            if (resolved && !inMenu) {
+                
                 playerManager_->SetPlayer(addrs.player);
-                timeController_->SetTimeDilationAddress(addrs.timeDilation);
                 enemyManager_->SetWorld(reinterpret_cast<HalfSword::SDK::UWorld*>(addrs.uWorld));
                 enemyManager_->SetPlayer(reinterpret_cast<HalfSword::SDK::AWillie_BP_C*>(addrs.playerAddress));
                 gameModeManager_->SetWorld(reinterpret_cast<HalfSword::SDK::UWorld*>(addrs.uWorld));
-                gameState_->SetTimeDilation(timeController_->GetCurrentTimeDilation());
+                
+                
+                if (addrs.timeDilation != 0) {
+                    MemoryReader<float> reader(processManager_->GetProcess());
+                    if (reader.IsValid(addrs.timeDilation)) {
+                        timeController_->SetTimeDilationAddress(addrs.timeDilation);
+                        float currentDilation = timeController_->GetCurrentTimeDilation();
+                        gameState_->SetTimeDilation(currentDilation);
+                    } else {
+                        LOG_WARNING("Application", "TimeDilation address invalid, skipping");
+                        timeController_->SetTimeDilationAddress(0);
+                    }
+                }
+            } else {
+                
+                timeController_->SetTimeDilationAddress(0);
+                gameState_->SetTimeDilation(1.0f);
+                playerManager_->SetPlayer(nullptr);
             }
         }
 
@@ -283,19 +352,36 @@ void Application::Run() {
 
         running_ = !uiManager_->ShouldClose();
     }
+    
+    LOG_INFO("Application", "Main loop ended - Total frames: ", frameCount);
+    LOG_FUNC_EXIT("Application", "Run");
 }
 
 void Application::Shutdown() {
-    if (!initialized_) return;
+    LOG_FUNC_ENTRY("Application", "Shutdown");
+    
+    if (!initialized_) {
+        LOG_WARNING("Application", "Shutdown called but not initialized");
+        return;
+    }
 
+    LOG_INFO("Application", "Unregistering hotkey...");
     hotkeyManager_->UnregisterKey();
     
+    LOG_INFO("Application", "Shutting down ImGui...");
     ShutdownImGui();
+    
+    LOG_INFO("Application", "Shutting down renderer...");
     renderer_->Shutdown();
+    
+    LOG_INFO("Application", "Destroying window...");
     window_->Destroy();
 
     initialized_ = false;
     g_App = nullptr;
+    
+    LOG_INFO("Application", "Shutdown complete");
+    LOG_FUNC_EXIT("Application", "Shutdown");
 }
 
 void Application::InitializeImGui() {

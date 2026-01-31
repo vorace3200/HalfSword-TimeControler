@@ -20,6 +20,7 @@ struct UIConfig {
     int currentTab = 0;
     PlayerConfig playerConfig;
     EnemyConfig enemyConfig;
+    bool debugEnabled = false;
 };
 
 class UIManager {

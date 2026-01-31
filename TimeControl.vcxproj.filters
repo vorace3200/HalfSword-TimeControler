@@ -65,6 +65,7 @@
     <ClInclude Include="src\game\Config.hpp" />
     <ClInclude Include="src\game\EnemyManagerSDK.hpp" />
     <ClInclude Include="src\game\GameModeManagerSDK.hpp" />
+    <ClInclude Include="src\core\Logger.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
