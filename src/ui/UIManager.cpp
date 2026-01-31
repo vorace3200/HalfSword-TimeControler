@@ -134,23 +134,23 @@ void UIManager::RenderTimeTab() {
     ImGui::Separator();
     ImGui::Spacing();
     
-    ImGui::Text("Hotkey: %s", HotkeyManager::GetKeyName(hotkeyManager_.GetKey()));
+    ImGui::Text("Hotkey: %s", HotkeyManager::GetKeyName(hotkeyManager_.GetKey()).c_str());
     
     if (ImGui::Button("Change Hotkey")) {
         config_.waitingForKey = true;
+        config_.keyDebounceTime = GetTickCount();
     }
     
     if (config_.waitingForKey) {
-        ImGui::Text("Press a key...");
+        ImGui::Text("Press any key...");
         
-        size_t keyCount;
-        const int* keys = HotkeyManager::GetValidKeys(keyCount);
-        
-        for (size_t i = 0; i < keyCount; i++) {
-            if (GetAsyncKeyState(keys[i]) & 0x8000) {
-                hotkeyManager_.SetKey(keys[i]);
-                config_.waitingForKey = false;
-                break;
+        if (GetTickCount() - config_.keyDebounceTime > 200) {
+            for (int i = 0x03; i <= 0xFE; i++) {
+                if (GetAsyncKeyState(i) & 0x8000) {
+                    hotkeyManager_.SetKey(i);
+                    config_.waitingForKey = false;
+                    break;
+                }
             }
         }
     } else {
@@ -240,6 +240,8 @@ void UIManager::RenderMovementTab() {
         ImGui::Text("Player not found. Start a match first.");
         return;
     }
+    
+    ImGui::Spacing();
     
     float displaySpeed = config_.playerConfig.superSpeed;
     if (ImGui::SliderFloat("Walk Speed", &displaySpeed, 10.0f, 150.0f, "%.0f")) {

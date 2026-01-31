@@ -251,6 +251,11 @@ public:
         WriteProperty(offsetof(AWillie_BP_C, Damage_Rate_Additional), multiplier);
     }
 
+    void TriggerGetUp() {
+        LOG_INFO("TriggerGetUp: Writing Getup_Animation_State, offset=0x", std::hex, Offsets::GetupAnimationState, std::dec, ", value=1.0, player=0x", std::hex, (uintptr_t)player_, std::dec);
+        WriteProperty(Offsets::GetupAnimationState, 1.0);
+    }
+
     void DumpDebugInfo() const {
         if (!player_ || !process_) {
             LOG_WARNING("DumpDebugInfo: No player or process attached");

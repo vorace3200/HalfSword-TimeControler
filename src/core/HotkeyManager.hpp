@@ -1,18 +1,18 @@
 #pragma once
 #include <windows.h>
+#include <string>
 
 class HotkeyManager {
 public:
     HotkeyManager() = default;
     
-    void SetWindow(HWND window) {
-        window_ = window;
+    void SetWindow(HWND) {
     }
     
     void SetKey(int key) {
-        UnregisterKey();
         keybind_ = key;
-        RegisterKey();
+        lastKeyState_ = false;
+        triggered_ = false;
     }
     
     int GetKey() const {
@@ -20,36 +20,23 @@ public:
     }
     
     void RegisterKey() {
-        if (IsMouseButton(keybind_)) return;
-        if (window_) {
-            RegisterHotKey(window_, hotkeyId_, modifiers_, keybind_);
-        }
     }
     
     void UnregisterKey() {
-        if (IsMouseButton(keybind_)) return;
-        if (window_) {
-            UnregisterHotKey(window_, hotkeyId_);
-        }
     }
     
     void Update() {
-        if (IsMouseButton(keybind_)) {
-            keyDown_ = (GetAsyncKeyState(keybind_) & 0x8000) != 0;
-            if (keyDown_ && !lastKeyState_) {
-                triggered_ = true;
-            }
-            lastKeyState_ = keyDown_;
-        } else {
-            keyDown_ = triggered_;
-            if (triggered_) {
-                triggered_ = false;
-            }
+
+        bool keyDown = (GetAsyncKeyState(keybind_) & 0x8000) != 0;
+        
+        if (keyDown && !lastKeyState_) {
+            triggered_ = true;
         }
+        lastKeyState_ = keyDown;
     }
     
     bool IsKeyDown() const {
-        return keyDown_;
+        return (GetAsyncKeyState(keybind_) & 0x8000) != 0;
     }
     
     void OnHotkeyReceived() {
@@ -63,41 +50,61 @@ public:
     }
     
     static bool IsMouseButton(int key) {
-        return key == VK_XBUTTON1 || key == VK_XBUTTON2;
+        return key == VK_LBUTTON || key == VK_RBUTTON || key == VK_MBUTTON || 
+               key == VK_XBUTTON1 || key == VK_XBUTTON2;
     }
     
-    static const char* GetKeyName(int key) {
+    static std::string GetKeyName(int key) {
+        if (key == 0) return "None";
+        
         switch (key) {
-            case VK_CAPITAL: return "Caps Lock";
+            case VK_LBUTTON: return "Left Mouse";
+            case VK_RBUTTON: return "Right Mouse";
+            case VK_MBUTTON: return "Middle Mouse";
+            case VK_XBUTTON1: return "Mouse 4";
+            case VK_XBUTTON2: return "Mouse 5";
             case VK_TAB: return "Tab";
+            case VK_RETURN: return "Enter";
+            case VK_ESCAPE: return "Esc";
             case VK_SPACE: return "Space";
-            case VK_INSERT: return "Insert";
-            case VK_DELETE: return "Delete";
-            case VK_HOME: return "Home";
-            case VK_END: return "End";
             case VK_PRIOR: return "Page Up";
             case VK_NEXT: return "Page Down";
-            case VK_XBUTTON1: return "Mouse 4 (Side)";
-            case VK_XBUTTON2: return "Mouse 5 (Side)";
-            default: return "Custom Key";
+            case VK_END: return "End";
+            case VK_HOME: return "Home";
+            case VK_LEFT: return "Left";
+            case VK_UP: return "Up";
+            case VK_RIGHT: return "Right";
+            case VK_DOWN: return "Down";
+            case VK_INSERT: return "Insert";
+            case VK_DELETE: return "Delete";
+            case VK_MULTIPLY: return "Numpad *";
+            case VK_ADD: return "Numpad +";
+            case VK_SEPARATOR: return "Separator";
+            case VK_SUBTRACT: return "Numpad -";
+            case VK_DECIMAL: return "Numpad .";
+            case VK_DIVIDE: return "Numpad /";
+            case VK_CAPITAL: return "Caps Lock";
         }
-    }
-    
-    static const int* GetValidKeys(size_t& count) {
-        static const int keys[] = {
-            VK_CAPITAL, VK_TAB, VK_SPACE, VK_INSERT, VK_DELETE,
-            VK_HOME, VK_END, VK_PRIOR, VK_NEXT, VK_XBUTTON1, VK_XBUTTON2
-        };
-        count = sizeof(keys) / sizeof(keys[0]);
-        return keys;
+        
+        if ((key >= '0' && key <= '9') || (key >= 'A' && key <= 'Z')) {
+            return std::string(1, (char)key);
+        }
+        
+        unsigned int scanCode = MapVirtualKeyA(key, MAPVK_VK_TO_VSC);
+        
+ 
+        if (scanCode != 0) {
+            char buf[128];
+            if (GetKeyNameTextA(scanCode << 16, buf, 128) > 0) {
+                return std::string(buf);
+            }
+        }
+        
+        return "Key " + std::to_string(key);
     }
 
 private:
-    HWND window_ = nullptr;
     int keybind_ = VK_CAPITAL;
-    int hotkeyId_ = 1;
-    UINT modifiers_ = 0;
     bool lastKeyState_ = false;
     bool triggered_ = false;
-    bool keyDown_ = false;
 };

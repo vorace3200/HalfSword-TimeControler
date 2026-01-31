@@ -21,6 +21,7 @@ struct UIConfig {
     PlayerConfig playerConfig;
     EnemyConfig enemyConfig;
     bool debugEnabled = false;
+    DWORD keyDebounceTime = 0;
 };
 
 class UIManager {
