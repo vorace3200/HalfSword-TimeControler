@@ -51,4 +51,5 @@ struct Offsets {
     static constexpr uintptr_t LocalPlayerData = 0x0;
     static constexpr uintptr_t ObjFlags = 0x8;
     static constexpr uintptr_t ObjIndex = 0xC;
+    static constexpr uintptr_t PawnController = 0x02C8;
 };

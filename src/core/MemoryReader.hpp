@@ -25,7 +25,7 @@ public:
         SIZE_T bytesWritten;
         DWORD oldProtect;
         
-        if (!VirtualProtectEx(process_, reinterpret_cast<LPVOID>(address), sizeof(T), PAGE_EXECUTE_READWRITE, &oldProtect))
+        if (!VirtualProtectEx(process_, reinterpret_cast<LPVOID>(address), sizeof(T), PAGE_READWRITE, &oldProtect))
             return false;
 
         bool success = WriteProcessMemory(process_, reinterpret_cast<LPVOID>(address), &value, sizeof(T), &bytesWritten);

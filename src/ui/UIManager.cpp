@@ -349,6 +349,18 @@ void UIManager::RenderDebugTab() {
     ImGui::Spacing();
     
     ImGui::Text("Status: %s", gameState_.GetStatus().c_str());
+    
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+    
+    if (ImGui::Button("Dump Player Info (Check Logs)")) {
+        if (playerManager_.HasPlayer()) {
+            playerManager_.DumpDebugInfo();
+        } else {
+            LOG_WARNING("Cannot dump info: No player found");
+        }
+    }
 }
 
 void UIManager::RenderFooter() {

@@ -100,7 +100,11 @@ public:
         uintptr_t pawnAddr = ptrReader.Read(playerController + Offsets::AcknowledgedPawn);
         if (pawnAddr == 0) return 0;
 
-        
+        uintptr_t pawnController = ptrReader.Read(pawnAddr + Offsets::PawnController);
+        if (pawnController != playerController) {
+            return 0;
+        }
+
         uintptr_t charMove = ptrReader.Read(pawnAddr + offsetof(HalfSword::SDK::ACharacter, CharacterMovement));
         if (charMove == 0) return 0;
         
@@ -116,18 +120,16 @@ public:
             return 0;
         }
         double health = healthReader.Read(pawnAddr + Offsets::HealthMain);
-        if (health < 0 || health > 1000) {
+        
+        if (health < 1.0 || health > 1000.0) {
             return 0;
         }
         
-        
         int32_t flags = intReader.Read(pawnAddr + Offsets::ObjFlags);
         
-        if (flags & 0x18000) { 
+        if ((flags & 0x18000) || (flags & 0x200000)) { 
             return 0; 
         }
-        
-        
         
         MemoryReader<uint8_t> byteReader(process);
         if (byteReader.IsValid(pawnAddr + Offsets::Invulnerable)) {

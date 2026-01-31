@@ -251,6 +251,66 @@ public:
         WriteProperty(offsetof(AWillie_BP_C, Damage_Rate_Additional), multiplier);
     }
 
+    void DumpDebugInfo() const {
+        if (!player_ || !process_) {
+            LOG_WARNING("DumpDebugInfo: No player or process attached");
+            return;
+        }
+
+        uintptr_t base = (uintptr_t)player_;
+        LOG_INFO("=== PLAYER DEBUG DUMP ===");
+        LOG_INFO("Player Address: 0x", std::hex, base, std::dec);
+
+        MemoryReader<int32_t> intReader(process_, "DebugDump");
+        MemoryReader<uintptr_t> ptrReader(process_, "DebugDump");
+        MemoryReader<double> doubleReader(process_, "DebugDump");
+        MemoryReader<uint8_t> byteReader(process_, "DebugDump");
+
+        if (intReader.IsValid(base + Offsets::ObjFlags)) {
+            int32_t flags = intReader.Read(base + Offsets::ObjFlags);
+            LOG_INFO("Flags (0x8): 0x", std::hex, flags, std::dec);
+        } else {
+            LOG_ERROR("Flags (0x8): INVALID MEMORY");
+        }
+
+        if (intReader.IsValid(base + Offsets::ObjIndex)) {
+            int32_t index = intReader.Read(base + Offsets::ObjIndex);
+            LOG_INFO("Internal Index (0xC): ", index);
+        } else {
+            LOG_ERROR("Internal Index (0xC): INVALID MEMORY");
+        }
+
+        if (ptrReader.IsValid(base + 0x10)) {
+            uintptr_t classPtr = ptrReader.Read(base + 0x10);
+            LOG_INFO("Class Pointer (0x10): 0x", std::hex, classPtr, std::dec);
+        } else {
+            LOG_ERROR("Class Pointer (0x10): INVALID MEMORY");
+        }
+
+        if (ptrReader.IsValid(base + Offsets::PawnController)) {
+            uintptr_t controller = ptrReader.Read(base + Offsets::PawnController);
+            LOG_INFO("Controller (0x2C8): 0x", std::hex, controller, std::dec);
+        } else {
+            LOG_ERROR("Controller (0x2C8): INVALID MEMORY");
+        }
+
+        if (doubleReader.IsValid(base + Offsets::HealthMain)) {
+            double health = doubleReader.Read(base + Offsets::HealthMain);
+            LOG_INFO("Health (0x1318): ", health);
+        } else {
+            LOG_ERROR("Health (0x1318): INVALID MEMORY");
+        }
+
+        if (byteReader.IsValid(base + Offsets::Invulnerable)) {
+            uint8_t invuln = byteReader.Read(base + Offsets::Invulnerable);
+            LOG_INFO("Invulnerable (0x227A): ", (int)invuln);
+        } else {
+            LOG_ERROR("Invulnerable (0x227A): INVALID MEMORY");
+        }
+        
+        LOG_INFO("=========================");
+    }
+
 private:
     HANDLE process_ = nullptr;
     AWillie_BP_C* player_ = nullptr;
