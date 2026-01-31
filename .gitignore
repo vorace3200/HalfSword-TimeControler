@@ -1,0 +1,49 @@
+# Build outputs
+*.exe
+*.dll
+*.lib
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.res
+*.idb
+*.tlog
+*.lastbuildstate
+*.vcxproj.user
+*.vcxproj.filters
+*.sln.cache
+
+# Directories
+[Bb]in/
+[Bb]uild/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+ARM/
+ARM64/
+
+# Visual Studio
+.vs/
+.vscode/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.user
+*.suo
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+ipch/
+
+# ImGui build files
+imgui/*.o
+
+# Windows
+Thumbs.db
+Desktop.ini
+*.tmp
+*.temp

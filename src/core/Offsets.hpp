@@ -1,0 +1,52 @@
+#pragma once
+#include <cstdint>
+
+struct Offsets {
+    static constexpr uintptr_t GWorld = 0x8D329E8;
+    static constexpr uintptr_t PersistentLevel = 0x30;
+    static constexpr uintptr_t WorldSettings = 0x2A0;
+    static constexpr uintptr_t TimeDilation = 0x3C0;
+    static constexpr uintptr_t OwningGameInstance = 0x1D8;
+    static constexpr uintptr_t LocalPlayers = 0x38;
+    static constexpr uintptr_t PlayerController = 0x30;
+    static constexpr uintptr_t AcknowledgedPawn = 0x338;
+    static constexpr uintptr_t CharacterMovement = 0x0320;
+    static constexpr uintptr_t WalkSpeed = 0x0248;
+    static constexpr uintptr_t JumpPower = 0x0178;
+    static constexpr uintptr_t GravityScale = 0x0170;
+    static constexpr uintptr_t PlayerMass = 0x02D0;
+    static constexpr uintptr_t PunchForceLeft = 0x1EC0;
+    static constexpr uintptr_t PunchForceRight = 0x1EC8;
+    static constexpr uintptr_t KickForceLeft = 0x348C;
+    static constexpr uintptr_t KickForceRight = 0x3494;
+    static constexpr uintptr_t DamageMultiplier = 0x2400;
+    static constexpr uintptr_t MusclePower = 0x14C8;
+    static constexpr uintptr_t HeightRate = 0x3A08;
+    static constexpr uintptr_t MuscleRate = 0x3A10;
+    static constexpr uintptr_t DrunkLevel = 0x3F98;
+    static constexpr uintptr_t ZombieMode = 0x3FA9;
+    static constexpr uintptr_t Invulnerable = 0x227A;
+    static constexpr uintptr_t Stamina = 0x2958;
+    static constexpr uintptr_t Pain = 0x14E0;
+    static constexpr uintptr_t Consciousness = 0x15F8;
+    static constexpr uintptr_t GameInstanceDamageRate = 0x01D0;
+    static constexpr uintptr_t HealthMain = 0x1318;
+    static constexpr uintptr_t HealthBody1 = 0x1600;
+    static constexpr uintptr_t HealthBody2 = 0x1608;
+    static constexpr uintptr_t HealthBody3 = 0x1610;
+    static constexpr uintptr_t HealthBody4 = 0x1618;
+    static constexpr uintptr_t HealthBody5 = 0x1620;
+    static constexpr uintptr_t HealthBody6 = 0x1628;
+    static constexpr uintptr_t HealthBody7 = 0x1630;
+    static constexpr uintptr_t EnemyHair = 0x0680;
+    static constexpr uintptr_t EnemyBreakRArm = 0x38A8;
+    static constexpr uintptr_t EnemyBreakLArm = 0x38A9;
+    static constexpr uintptr_t EnemyBreakRLeg = 0x38AA;
+    static constexpr uintptr_t EnemyBreakLLeg = 0x38AB;
+    static constexpr uintptr_t EnemyBreakNeck = 0x38AC;
+    static constexpr uintptr_t EnemyBreakBack = 0x41B8;
+    static constexpr uintptr_t ActorsArray = 0xA0;
+    static constexpr uintptr_t ActorsCount = 0x8;
+    static constexpr uintptr_t LocalPlayersCount = 0x8;
+    static constexpr uintptr_t LocalPlayerData = 0x0;
+};

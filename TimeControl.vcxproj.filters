@@ -19,9 +19,10 @@
     <ClCompile Include="imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="imgui\imgui_tables.cpp" />
-    <ClCompile Include="ui\ui.cpp" />
+    <ClCompile Include="src\ui\UIManager.cpp" />
+    <ClCompile Include="src\Application.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -48,9 +49,22 @@
     <ClInclude Include="imgui\imstb_truetype.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="main.h" />
-    <ClInclude Include="ui\ui.hpp" />
-    <ClInclude Include="globals.hpp" />
+    <ClInclude Include="src\core\HotkeyManager.hpp" />
+    <ClInclude Include="src\core\MemoryReader.hpp" />
+    <ClInclude Include="src\core\Offsets.hpp" />
+    <ClInclude Include="src\core\ProcessManager.hpp" />
+    <ClInclude Include="src\game\AddressResolver.hpp" />
+    <ClInclude Include="src\game\EnemyManager.hpp" />
+    <ClInclude Include="src\game\GameState.hpp" />
+    <ClInclude Include="src\game\PlayerManager.hpp" />
+    <ClInclude Include="src\game\TimeController.hpp" />
+    <ClInclude Include="src\ui\UIManager.hpp" />
+    <ClInclude Include="src\Application.hpp" />
+    <ClInclude Include="src\game\PlayerManagerSDK.hpp" />
+    <ClInclude Include="src\sdk\PlayerSDK.hpp" />
+    <ClInclude Include="src\game\Config.hpp" />
+    <ClInclude Include="src\game\EnemyManagerSDK.hpp" />
+    <ClInclude Include="src\game\GameModeManagerSDK.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
