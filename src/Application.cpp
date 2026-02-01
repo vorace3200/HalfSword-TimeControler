@@ -179,9 +179,9 @@ LRESULT CALLBACK Window::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                 return 0;
             }
             break;
-        case WM_HOTKEY:
-            if (g_App && wParam == 1) {
-                g_App->GetHotkeyManager()->OnHotkeyReceived();
+        case WM_INPUT:
+            if (g_App) {
+                g_App->GetHotkeyManager()->ProcessRawInput(lParam);
             }
             return 0;
     }
@@ -227,7 +227,7 @@ bool Application::Initialize() {
     addressResolver_ = std::make_unique<AddressResolver>(*processManager_, *gameState_);
 
     hotkeyManager_->SetWindow(window_->GetHandle());
-    hotkeyManager_->RegisterKey();
+    hotkeyManager_->RegisterRawInput();
 
     uiManager_ = std::make_unique<UIManager>(*gameState_, *playerManager_, *timeController_,
                                              *enemyManager_, *gameModeManager_, *hotkeyManager_, *processManager_);

@@ -13,29 +13,25 @@ void UIManager::Init(LPDIRECT3DDEVICE9 device) {
 
 void UIManager::Render() {
     ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(500, 500));
+    ImGui::SetNextWindowSize(ImVec2(350, 270), ImGuiCond_FirstUseEver);
     
-    if (!ImGui::Begin("TimeControler - Version 1.0.3 (Early Access)", &isOpen_, 
-                      ImGuiWindowFlags_NoResize)) {
+    if (!ImGui::Begin("TimeControler - Version 1.0.4 (Early Access)", &isOpen_)) {
         ImGui::End();
         return;
     }
     
     const auto& addrs = gameState_.GetAddresses();
     if (addrs.IsValid() && addrs.HasPlayer()) {
-        const char* tabs[] = { "Time", "Player", "Movement", "Combat", "Enemy", "Debug" };
+        const char* tabs[] = { "Time", "Player", "Debug" };
         
         if (ImGui::BeginTabBar("MainTabs")) {
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 3; i++) {
                 if (ImGui::BeginTabItem(tabs[i])) {
                     config_.currentTab = i;
                     switch (i) {
                         case 0: RenderTimeTab(); break;
                         case 1: RenderPlayerTab(); break;
-                        case 2: RenderMovementTab(); break;
-                        case 3: RenderCombatTab(); break;
-                        case 4: RenderEnemyTab(); break;
-                        case 5: RenderDebugTab(); break;
+                        case 2: RenderDebugTab(); break;
                     }
                     ImGui::EndTabItem();
                 }
@@ -114,12 +110,6 @@ void UIManager::UpdatePlayerCheats() {
         playerManager_.SetInfiniteKick(true);
     }
     
-    playerManager_.SetWalkSpeed(config_.playerConfig.superSpeed);
-    playerManager_.SetJumpPower(config_.playerConfig.superJump);
-    playerManager_.SetGravityScale(config_.playerConfig.gravityScale);
-    playerManager_.SetMass(config_.playerConfig.playerMass);
-    playerManager_.SetGroundFriction(config_.playerConfig.groundFriction);
-    
     playerManager_.SetMusclePower(config_.playerConfig.musclePower);
     playerManager_.SetPunchForce(config_.playerConfig.punchForce);
     playerManager_.SetKickForce(config_.playerConfig.kickForce);
@@ -129,6 +119,7 @@ void UIManager::UpdatePlayerCheats() {
 void UIManager::RenderTimeTab() {
     ImGui::Text("Current TimeDilation: %.2f", gameState_.GetTimeDilation());
     ImGui::SliderFloat("Slow Time", &config_.slowTime, 0.1f, 2.0f, "%.2f");
+    
     ImGui::Checkbox("Toggle Mode", &config_.toggleMode);
     
     ImGui::Separator();
@@ -136,26 +127,19 @@ void UIManager::RenderTimeTab() {
     
     ImGui::Text("Hotkey: %s", HotkeyManager::GetKeyName(hotkeyManager_.GetKey()).c_str());
     
-    if (ImGui::Button("Change Hotkey")) {
-        config_.waitingForKey = true;
-        config_.keyDebounceTime = GetTickCount();
+    if (hotkeyManager_.IsListening()) {
+        ImGui::Button("Press any key...", ImVec2(120, 0));
+    } else {
+        if (ImGui::Button("Change Hotkey")) {
+            hotkeyManager_.StartListening();
+        }
     }
     
-    if (config_.waitingForKey) {
-        ImGui::Text("Press any key...");
-        
-        if (GetTickCount() - config_.keyDebounceTime > 200) {
-            for (int i = 0x03; i <= 0xFE; i++) {
-                if (GetAsyncKeyState(i) & 0x8000) {
-                    hotkeyManager_.SetKey(i);
-                    config_.waitingForKey = false;
-                    break;
-                }
-            }
-        }
-    } else {
-        ImGui::Text("TimeControler active: %s", config_.timeActive ? "ON" : "OFF");
-    }
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    ImGui::Text("TimeControler active: %s", config_.timeActive ? "ON" : "OFF");
 }
 
 void UIManager::RenderPlayerTab() {
@@ -244,11 +228,11 @@ void UIManager::RenderMovementTab() {
     ImGui::Spacing();
     
     float displaySpeed = config_.playerConfig.superSpeed;
-    if (ImGui::SliderFloat("Walk Speed", &displaySpeed, 10.0f, 150.0f, "%.0f")) {
+    if (ImGui::SliderFloat("Walk Speed", &displaySpeed, 10.0f, 1000.0f, "%.0f")) {
         LOG_INFO("UIManager", "Walk Speed changed: ", displaySpeed);
         config_.playerConfig.superSpeed = displaySpeed;
     }
-    if (ImGui::SliderFloat("Jump Power", &config_.playerConfig.superJump, 100.0f, 2000.0f, "%.0f")) {
+    if (ImGui::SliderFloat("Jump Power", &config_.playerConfig.superJump, 100.0f, 4000.0f, "%.0f")) {
         LOG_INFO("UIManager", "Jump Power changed: ", config_.playerConfig.superJump);
     }
     if (ImGui::SliderFloat("Gravity Scale", &config_.playerConfig.gravityScale, 0.1f, 3.0f, "%.1f")) {
@@ -262,6 +246,14 @@ void UIManager::RenderMovementTab() {
     }
     
     ImGui::Spacing();
+    if (ImGui::Checkbox("Remove Speed Limit", &config_.playerConfig.removeSpeedLimit)) {
+        LOG_INFO("UIManager", "Remove Speed Limit toggled: ", config_.playerConfig.removeSpeedLimit ? "ON" : "OFF");
+    }
+    ImGui::SameLine();
+    ImGui::TextDisabled("(?)");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Removes acceleration limits for faster movement");
+    
+    ImGui::Spacing();
     if (ImGui::Button("Reset to Default")) {
         LOG_INFO("UIManager", "Reset to Default button clicked");
         config_.playerConfig.superSpeed = 60.0f;
@@ -269,33 +261,14 @@ void UIManager::RenderMovementTab() {
         config_.playerConfig.gravityScale = 1.0f;
         config_.playerConfig.playerMass = 100.0f;
         config_.playerConfig.groundFriction = 8.0f;
+        config_.playerConfig.removeSpeedLimit = false;
     }
 }
 
 void UIManager::RenderCombatTab() {
-    if (!playerManager_.HasPlayer()) {
-        ImGui::Text("Player not found. Start a match first.");
-        return;
-    }
-    
-    if (ImGui::SliderFloat("Punch Force", &config_.playerConfig.punchForce, 0.1f, 10.0f, "%.1f")) {
-        LOG_INFO("UIManager", "Punch Force changed: ", config_.playerConfig.punchForce);
-    }
-    if (ImGui::SliderFloat("Kick Force", &config_.playerConfig.kickForce, 0.1f, 10.0f, "%.1f")) {
-        LOG_INFO("UIManager", "Kick Force changed: ", config_.playerConfig.kickForce);
-    }
-    if (ImGui::SliderFloat("Damage Multiplier", &config_.playerConfig.damageMultiplier, 0.1f, 50.0f, "%.1f")) {
-        LOG_INFO("UIManager", "Damage Multiplier changed: ", config_.playerConfig.damageMultiplier);
-    }
-    if (ImGui::SliderFloat("Muscle Power", &config_.playerConfig.musclePower, 0.1f, 5.0f, "%.1f")) {
-        LOG_INFO("UIManager", "Muscle Power changed: ", config_.playerConfig.musclePower);
-    }
 }
 
 void UIManager::RenderEnemyTab() {
-    ImGui::TextColored(ImVec4(1, 0, 0, 1), "FEATURE DISABLED");
-    ImGui::Text("Enemy system needs to be fixed.");
-    ImGui::Text("Issues with external actor detection.");
 }
 
 void UIManager::RenderDebugTab() {

@@ -67,6 +67,6 @@ private:
     
     DWORD lastPlayerUpdateTime_ = 0;
     DWORD lastTimeUpdateTime_ = 0;
-    static constexpr DWORD PLAYER_UPDATE_INTERVAL = 100;
+    static constexpr DWORD PLAYER_UPDATE_INTERVAL = 10;
     static constexpr DWORD TIME_UPDATE_INTERVAL = 50;
 };

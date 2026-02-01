@@ -19,6 +19,7 @@ struct PlayerConfig {
     bool maxConsciousness = false;
     bool zombieMode = false;
     bool infiniteKick = false;
+    bool removeSpeedLimit = false;
     float debugHealth = 100.0f;
 };
 

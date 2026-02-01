@@ -12,6 +12,9 @@ struct Offsets {
     static constexpr uintptr_t AcknowledgedPawn = 0x338;
     static constexpr uintptr_t CharacterMovement = 0x0320;
     static constexpr uintptr_t WalkSpeed = 0x0248;
+    static constexpr uintptr_t MaxFlySpeed = 0x0254;
+    static constexpr uintptr_t MaxCustomMovementSpeed = 0x0258;
+    static constexpr uintptr_t MaxAcceleration = 0x025C;
     static constexpr uintptr_t JumpPower = 0x0178;
     static constexpr uintptr_t GravityScale = 0x0170;
     static constexpr uintptr_t PlayerMass = 0x02D0;

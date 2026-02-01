@@ -94,7 +94,12 @@ namespace HalfSword::SDK {
         float Ground_Friction;
         uint8_t pad_0208[0x40];
         float Max_Walk_Speed;
-        uint8_t pad_024C[0x84];
+        float Max_Walk_Speed_Crouched;
+        float Max_Swim_Speed;
+        float Max_Fly_Speed;
+        float Max_Custom_Movement_Speed;
+        float Max_Acceleration;
+        uint8_t pad_0260[0x70];
         float Mass;
     };
     static_assert(offsetof(UCharacterMovementComponent, Gravity_Scale) == 0x170);

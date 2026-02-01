@@ -157,9 +157,18 @@ public:
         if (!charMovementPtr) return;
         
         MemoryReader<float> writer(process_);
-        if (!writer.IsValid(charMovementPtr + offsetof(UCharacterMovementComponent, Max_Walk_Speed))) return;
-        LOG_INFO("SetWalkSpeed: Writing Max_Walk_Speed, offset=0x", std::hex, offsetof(UCharacterMovementComponent, Max_Walk_Speed), std::dec, ", value=", realSpeed, ", player=0x", std::hex, (uintptr_t)player_, std::dec);
-        writer.Write(charMovementPtr + offsetof(UCharacterMovementComponent, Max_Walk_Speed), realSpeed);
+        if (writer.IsValid(charMovementPtr + offsetof(UCharacterMovementComponent, Max_Walk_Speed))) {
+             writer.Write(charMovementPtr + offsetof(UCharacterMovementComponent, Max_Walk_Speed), realSpeed);
+        }
+        if (writer.IsValid(charMovementPtr + offsetof(UCharacterMovementComponent, Max_Walk_Speed_Crouched))) {
+             writer.Write(charMovementPtr + offsetof(UCharacterMovementComponent, Max_Walk_Speed_Crouched), realSpeed);
+        }
+        if (writer.IsValid(charMovementPtr + offsetof(UCharacterMovementComponent, Max_Fly_Speed))) {
+             writer.Write(charMovementPtr + offsetof(UCharacterMovementComponent, Max_Fly_Speed), realSpeed);
+        }
+        if (writer.IsValid(charMovementPtr + offsetof(UCharacterMovementComponent, Max_Custom_Movement_Speed))) {
+             writer.Write(charMovementPtr + offsetof(UCharacterMovementComponent, Max_Custom_Movement_Speed), realSpeed);
+        }
     }
     
     void SetJumpPower(float power) {
@@ -212,6 +221,20 @@ public:
         
         LOG_INFO("SetGroundFriction: Writing Ground_Friction, offset=0x", std::hex, offsetof(UCharacterMovementComponent, Ground_Friction), std::dec, ", value=", friction, ", player=0x", std::hex, (uintptr_t)player_, std::dec);
         writer.Write(charMovementPtr + offsetof(UCharacterMovementComponent, Ground_Friction), friction);
+    }
+    
+    void SetSpeedLimit(bool enabled) {
+        if (!process_ || !player_) return;
+        
+        uintptr_t charMovementPtr = MemoryReader<uintptr_t>(process_).Read((uintptr_t)player_ + offsetof(AWillie_BP_C, CharacterMovement));
+        if (!charMovementPtr) return;
+        
+        MemoryReader<float> writer(process_);
+        if (!writer.IsValid(charMovementPtr + offsetof(UCharacterMovementComponent, Max_Acceleration))) return;
+        
+        float value = enabled ? 99999.0f : 2048.0f;
+        LOG_INFO("SetSpeedLimit: Writing Max_Acceleration, offset=0x", std::hex, offsetof(UCharacterMovementComponent, Max_Acceleration), std::dec, ", value=", value, ", player=0x", std::hex, (uintptr_t)player_, std::dec);
+        writer.Write(charMovementPtr + offsetof(UCharacterMovementComponent, Max_Acceleration), value);
     }
     
     void SetMusclePower(double power) {
@@ -297,6 +320,25 @@ public:
             LOG_INFO("Controller (0x2C8): 0x", std::hex, controller, std::dec);
         } else {
             LOG_ERROR("Controller (0x2C8): INVALID MEMORY");
+        }
+
+        if (ptrReader.IsValid(base + offsetof(AWillie_BP_C, CharacterMovement))) {
+            uintptr_t charMove = ptrReader.Read(base + offsetof(AWillie_BP_C, CharacterMovement));
+            LOG_INFO("CharacterMovement (0x320): 0x", std::hex, charMove, std::dec);
+            
+            if (charMove) {
+                 MemoryReader<float> fReader(process_, "DebugDump");
+                 if (fReader.IsValid(charMove + offsetof(UCharacterMovementComponent, Max_Walk_Speed))) {
+                     float speed = fReader.Read(charMove + offsetof(UCharacterMovementComponent, Max_Walk_Speed));
+                     LOG_INFO("  > Max_Walk_Speed (0x248): ", speed);
+                 }
+                 if (fReader.IsValid(charMove + offsetof(UCharacterMovementComponent, Max_Acceleration))) {
+                     float accel = fReader.Read(charMove + offsetof(UCharacterMovementComponent, Max_Acceleration));
+                     LOG_INFO("  > Max_Acceleration (0x25C): ", accel);
+                 }
+            }
+        } else {
+            LOG_ERROR("CharacterMovement (0x320): INVALID MEMORY");
         }
 
         if (doubleReader.IsValid(base + Offsets::HealthMain)) {
